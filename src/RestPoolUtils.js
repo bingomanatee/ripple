@@ -7,15 +7,15 @@ export default (bottle) => {
 
     bottle.factory('axios', () => axios);
 
-    bottle.factory('observeSingle', ({restDataFromImpulse, isUnset, UNSET, DataMap}) => {
-
-        };
+    bottle.factory('observeSingle', ({restDataFromImpulse, isUnset, UNSET, DataMap, noop}) => {
+        return noop;
     });
 
-    bottle.factory('restChannels', ({UNSET, observeSingle, error, restDataFromImpulse, DataMap, isUnset}) => {
+    bottle.factory('restChannels', ({UNSET, observeSingle, noop, error, restDataFromImpulse, DataMap, isUnset}) => {
+        return noop;
+    });
 
-    );
-
-    bottle.factory('restDataFromImpulse', ({UNSET}) => {
+    bottle.factory('restDataFromImpulse', ({UNSET, noop}) => {
+        return noop;
     });
 }

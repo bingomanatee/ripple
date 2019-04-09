@@ -19,6 +19,8 @@ export default (bottle) => {
         }
 
         class RestPool extends Pool {
+        };
 
+        return RestPool;
     })
 }

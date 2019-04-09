@@ -2,48 +2,16 @@ import {Store} from '@wonderlandlabs/looking-glass-engine';
 import {Subject} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
 import lGet from 'lodash.get';
+import propper from '@wonderlandlabs/propper';
 
 export default (bottle) => {
 
-    bottle.factory('poolRunner', ({PoolRunner}) => {
-        return new PoolRunner;
-    });
-
-    bottle.factory('PoolRunner', ({}) => {
-        /**
-         * PoolRunner schedules the flushing of all pools.
-         * By default all pools share the same runner;
-         * if you need to coordinate the flushing of pools,
-         * you can grant a set of pools their own runner.
-         *
-         * By default the runner will flush as often as possible
-         * based on requestAnimationFrame. If you want to manage or throttle
-         * the scheduling, you can call setManual() on the runner,
-         * and then you are responsible for scheduling the flushing yourself.
-         */
-        class PoolRunner {
-
-        }
-
-        return PoolRunner;
-    });
-
-    bottle.factory('Pool', function ({Vector, poolRunner, error, noop}) {
-        return class Pool {
-            constructor(config = {}) {
+    bottle.factory('Pool', function ({Vector, error, noop}) {
+        class Pool {
+            constructor(name, config = {}) {
+                this.name = name;
                 this.vectors = lGet(config, '_vectors', new Map());
                 this.config = lGet(config, 'config', config);
-            }
-
-            get vectors() {
-                if (!this._vectors) {
-                    this._vectors = new Map();
-                }
-                return this._vectors;
-            }
-
-            set vectors(value) {
-                this._vectors = value;
             }
 
             addVector(name, config, force = false) {
@@ -58,8 +26,10 @@ export default (bottle) => {
                 if (config instanceof Vector) {
                     config.pool = this;
                     this.vectors.set(name, config);
+                } else if (typeof config === 'function') {
+                    this.vectors.set(name, new Vector(name, {pool: this, sender: config}));
                 } else {
-                    this.vectors.set(name, new Vector({pool: this, ...config}))
+                    this.vectors.set(name, new Vector(name, {...config, pool: this, ...config}))
                 }
                 return this;
             }
@@ -73,8 +43,37 @@ export default (bottle) => {
                     })
                 }
 
-                this.vectors.get(name).impulse(params);
+                return this.vectors.get(name).impulse(params);
+            }
+
+            get signalStream() {
+                if (!this._signalStream) {
+                    this._signalStream = new Subject();
+                }
+                return this._signalStream;
+            }
+
+            subscribe(...params) {
+                return this.signalStream.subscribe(...params);
             }
         };
+
+        propper(Pool)
+            .addProp('vectors', ({defaultValue: () => new Map}))
+            .addProp('name', {type: 'string', required: true})
+            .addProp('config', {
+                type: 'object', defaultValue: () => {
+                    return {};
+                },
+                onInvalid: (...params) => {
+                    throw error('bad pool.config', {
+                        field: 'config',
+                        object: 'Pool',
+                        params
+                    })
+                }
+            });
+
+        return Pool;
     });
 }

@@ -5,13 +5,21 @@ import uuid from 'uuid/v4';
 
 export default (bottle) => {
 
-    bottle.factory('Signal', ({UNSET, Pool, Update, Impulse, error, noop, isUnset}) => {
+    bottle.factory('Signal', ({UNSET, Update, error, noop, isUnset}) => {
         /**
          * A channel is a named operation
          */
         return class Signal {
             constructor(impulse) {
                 this._impulse = impulse;
+            }
+
+            toJSON(){
+                return {
+                    pool: this.pool.name,
+                    vector: this.vector.name,
+                    query: JSON.stringify(this.query)
+                }
             }
 
             get pool() {

@@ -1,103 +1,113 @@
-import {Store} from '@wonderlandlabs/looking-glass-engine';
-import {filter, map} from 'rxjs/operators';
-import lget from 'lodash.get';
+import propper from '@wonderlandlabs/propper';
+import lGet from 'lodash.get';
+import {filter, map, startWith} from 'rxjs/operators';
 import uuid from 'uuid/v4';
 
 export default (bottle) => {
 
-    bottle.factory('Vector', ({UNSET, Pool, Update, Impulse, error, noop, isUnset}) => {
+    bottle.factory('Vector', ({UNSET, Update, Impulse, error, noop, isUnset}) => {
         /**
          * A channel is a named operation
          */
-        return class Vector {
+        class Vector {
             constructor(name, config = {}) {
                 this.pool = lGet(config, 'pool');
                 this.sender = lGet(config, 'sender');
                 this.config = lGet(config, 'config', config);
                 this.schema = lGet(config, 'schema');
+                this._impulseFilter = lGet(config, 'impulseFilter', UNSET);
                 this._paramsToQuery = lGet(config, 'paramsToQuery', noop);
                 this.name = name;
-            }
-
-            get name() {
-                return this._name;
-            }
-
-            set name(value) {
-                if (!(value && typeof value === 'string')) {
-                    throw error('Attempt to set name to invalid value', {
-                        vector: this,
-                        origin: 'set name',
-                        value
-                    })
-                }
-                this._name = value;
-            }
-
-            get pool() {
-                return this._pool;
-            }
-
-            set pool(value) {
-                if (!(value instanceof Pool)) {
-                    throw error('Attempt to set pool to invalid value', {
-                        value,
-                        vector: this,
-                        origin: 'set pool'
-                    });
-                }
-                this._pool = value;
-            }
-
-            get schema() {
-                return this._schema;
-            }
-
-            set schema(value) {
-                this._schema = value;
             }
 
             impulse(params = {}) {
                 return new Impulse({
                     vector: this,
-                    pool: this._pool,
                     params
                 })
             }
 
-            get sender() {
-                return this._sender;
-            }
-
-            set sender(value) {
-                if (!(value && typeof value === 'function')) {
-                    throw error('Attempt to set sender to non function', {
-                        value,
-                        origin: 'set sender',
-                        vector: this
-                    })
-                }
-                this._sender = value;
-            }
-
             paramsToQuery(impulse) {
-                return this._paramsToQuery(impulse.props, impulse, this);
+                return this._paramsToQuery(impulse.params, impulse, this);
             }
 
-            send(signal) {
-                const promise = new Promise(async (succeed, fail) => {
+            async send(signal) {
+                    let response;
                     try {
-                        const response = await this.sender(signal);
+                        response = await this.sender(signal.query, signal);
                         signal.response = response;
-                        succeed(signal);
+                        this.pool.signalStream.next(signal);
                     } catch (error) {
+                        console.log('signal error: ', error.message);
                         signal.error = error;
-                        fail(signal);
+                        this.pool.signalStream.error(signal);
                     }
-                });
+                    return signal;
+            }
 
-                return promise;
+            impulseFilter(impulse) {
+                if (this._impulseFilter) {
+                    return this._impulseFilter(impulse, this);
+                }
+                return (signal => signal.impulse === impulse);
+            }
+
+            get signalStream() {
+                if (!this._signalStream) {
+                    this._signalStream = this.pool.signalStream
+                        .pipe(filter(signal => signal.vector.name === this.name));
+                }
+                return this._signalStream;
+            }
+
+            subscribe(...params) {
+                return this.signalStream.subscribe(...params);
             }
         };
+
+        propper(Vector)
+            .addProp('pool', {
+                required: true, type: 'object',
+                onInvalid: (...params) => {
+                    throw error('bad vector.pool', {
+                        field: 'config',
+                        object: 'Pool',
+                        params
+                    })
+                }
+            })
+            .addProp('sender', {
+                required: true, type: 'function',
+                onInvalid: (...params) => {
+                    throw error('bad vector.sender', {
+                        field: 'config',
+                        object: 'Pool',
+                        params
+                    })
+                }
+            })
+            .addProp('schema')
+            .addProp('config', {
+                type: 'object',
+                onInvalid: (...params) => {
+                    throw error('bad vector.config', {
+                        field: 'config',
+                        object: 'Pool',
+                        params
+                    })
+                }
+            })
+            .addProp('name', {
+                required: true, type: 'string',
+                onInvalid: (...params) => {
+                    throw error('bad vector.name', {
+                        field: 'config',
+                        object: 'Pool',
+                        params
+                    })
+                }
+            })
+
+        return Vector;
     });
 }

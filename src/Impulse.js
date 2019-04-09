@@ -4,6 +4,7 @@ import {inspect} from 'util';
 import cloneDeep from 'lodash.clonedeep';
 import {filter, map, startWith} from 'rxjs/operators';
 import lGet from 'lodash.get';
+import propper from '@wonderlandlabs/propper';
 
 export default (bottle) => {
 
@@ -16,7 +17,7 @@ export default (bottle) => {
     bottle.factory('IMPULSE_STATE_COMPLETE', ({Symbol}) => Symbol('IMPULSE_STATE_COMPLETE'));
 
     bottle.factory('Impulse', ({
-                                   UNSET, ifUnset, error, Signal
+                                   UNSET, error, Signal
                                }) => {
 
             /**
@@ -30,37 +31,54 @@ export default (bottle) => {
              * the pool's other impulse updates are relevant to the response.
              */
             class Impulse {
-                constructor({pool, vector, params}) {
-                    this.pool = pool;
-                    this.vector = vector;
-                    this._params = params;
-                }
-
-                get pool() {
-                    return this._pool;
-                }
-
-                set pool(value) {
-                    this._pool = value;
-                }
-
-                get vector() {
-                    return this._vector;
-                }
-
-                set vector(value) {
-                    this._vector = value;
+                constructor(config = {}) {
+                    this.vector = lGet(config, 'vector');
+                    this._params = lGet(config, 'params', config);
                 }
 
                 get params() {
+                    // @TODO: Immutable?
                     return this._params;
                 }
 
-                send(){
-                    const signal = new Signal(this);
-
+                get pool() {
+                    return this.vector.pool;
                 }
+
+                send() {
+                    const signal = new Signal(this);
+                    let promise = this.vector.send(signal);
+                    promise.then()
+                    return promise;
+                }
+
+                get signalStream() {
+                    if (!this._signalStream) {
+                        this._signalStream = this.vector.signalStream
+                            .pipe(this.vector.impulseFilter(this));
+                    }
+                    return this._signalStream;
+                }
+
+                subscribe(...params) {
+                    return this.signalStream.subscribe(...params);
+                }
+
             }
+
+            propper(Impulse)
+                .addProp('vector', {
+                    required: true,
+                    type: 'object',
+                    onInvalid:
+                        (err) => {
+                            throw error('bad impulse.config', {
+                                field: 'vector',
+                                object: 'Impulse',
+                                err
+                            })
+                        }
+                });
 
             return Impulse;
         }

@@ -1,7 +1,7 @@
 import Bottle from 'bottlejs';
 
 import collFactory from './Vector';
-import fetcherFactory from './Pool';
+import poolFactory from './Pool';
 import impulseFactory from './Impulse';
 import catchFactory from './rxCatch';
 import promiserFactory from './Promiser';
@@ -15,7 +15,7 @@ export default () => {
     let bottle = new Bottle();
     unsetFactory(bottle);
     collFactory(bottle);
-    fetcherFactory(bottle);
+    poolFactory(bottle);
     catchFactory(bottle);
     impulseFactory(bottle);
     promiserFactory(bottle);
