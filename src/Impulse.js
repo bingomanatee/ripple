@@ -1,10 +1,6 @@
-import uuid from 'uuid/v4';
-import {Subject} from 'rxjs';
-import {inspect} from 'util';
-import cloneDeep from 'lodash.clonedeep';
-import {filter, map, startWith} from 'rxjs/operators';
 import lGet from 'lodash.get';
 import propper from '@wonderlandlabs/propper';
+import {filter, map, startWith} from 'rxjs/operators';
 
 export default (bottle) => {
 
@@ -45,17 +41,15 @@ export default (bottle) => {
                     return this.vector.pool;
                 }
 
-                send() {
+                async send() {
                     const signal = new Signal(this);
-                    let promise = this.vector.send(signal);
-                    promise.then()
-                    return promise;
+                    return this.vector.send(signal);
                 }
 
                 get signalStream() {
                     if (!this._signalStream) {
                         this._signalStream = this.vector.signalStream
-                            .pipe(this.vector.impulseFilter(this));
+                            .pipe(filter(this.vector.impulseFilter(this)));
                     }
                     return this._signalStream;
                 }

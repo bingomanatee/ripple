@@ -1,9 +1,6 @@
 const tap = require('tap');
+const {bottle} = require('./../dist');
 const {inspect} = require('util');
-const {Subject} = require('rxjs');
-const lGet = require('lodash.get');
-const cloneDeep = require('lodash.clonedeep');
-const {bottle} = require('./../lib');
 
 tap.test('Pool', (suite) => {
 
@@ -14,7 +11,6 @@ tap.test('Pool', (suite) => {
         let myPool = new b.container.Pool('puppies')
             .addVector('addPuppy', (puppy) => {
                 if (!puppy.id) {
-                    console.log('---- no id puppy', JSON.stringify(puppy));
                     throw new Error('puppy without id');
                 }
                 puppies.push(puppy);
@@ -66,17 +62,17 @@ tap.test('Pool', (suite) => {
         });
 
         try {
-            await myPool.impulse('addPuppy', puppy).send();
-        } catch (err) {
-            console.log('error with signal send:', err.toJSON())
+            await myPool.impulse('addPuppy', puppy).send()
+        } catch(fail){
+            console.log('fallthrough', fail)
         }
+
         streamTest.equal(signals.length, 1);
-        //console.log('signals:', inspect(signals, {depth: 1}))
+        streamTest.equal(signals[0].badSignal.error.message, 'puppy without id');
 
         sub.unsubscribe();
 
         streamTest.end();
-        console.log('----- done')
     });
     suite.end();
 });

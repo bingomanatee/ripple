@@ -1,5 +1,5 @@
 export default function unsetFactory(bottle) {
-    bottle.factory('UNSET', ({Symbol}) => Symbol('UNSET'));
+    bottle.factory('UNSET', () => Symbol('UNSET'));
     bottle.factory('ifUnset', ({UNSET}) => {
         return (value, defaultValue) => {
             if ((value === UNSET) || (typeof value === "undefined")) {

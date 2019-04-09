@@ -2,25 +2,22 @@
   "name": "@wonderlandlabs/ripple",
   "version": "1.0.0",
   "description": "A stream based system for model/server communication",
-  "main": "lib/index.js",
-  "module": "es/index.js",
-  "files": [
-    "es",
-    "lib",
-    "umd"
-  ],
+  "source": "src/index.js",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "unpkg": "dist/index.umd.js",
   "scripts": {
-    "build": "nwb build-web-module",
-    "clean": "nwb clean-module",
-    "prepublishOnly": "npm run build",
-    "test": "yarn build;tap test src/*.test.js",
-    "test:int": "yarn build;tap test integration/*.int.js"
+    "build": "microbundle",
+    "dev": "microbundle watch",
+    "test": "microbundle;tap test src/*.test.js",
+    "test:int": "microbundle;tap test integration/*.int.js"
   },
   "dependencies": {
     "@wonderlandlabs/looking-glass-engine": "^1.0.12",
     "@wonderlandlabs/propper": "^2.0.4",
     "axios": "^0.18.0",
     "bottlejs": "^1.7.2",
+    "generator-javascript": "^1.2.0",
     "lodash.clonedeep": "^4.5.0",
     "lodash.flattendeep": "^4.4.0",
     "lodash.get": "^4.4.2",
@@ -28,10 +25,11 @@
     "rxjs": "^6.4.0",
     "url-join": "^4.0.0",
     "uuid": "^3.3.2",
+    "yo": "^2.0.5",
     "yup": "^0.26.10"
   },
   "devDependencies": {
-    "nwb": "0.23.x",
+    "microbundle": "^0.11.0",
     "tap": "^12.6.1"
   },
   "author": "",

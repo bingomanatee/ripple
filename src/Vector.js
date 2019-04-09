@@ -32,21 +32,19 @@ export default (bottle) => {
             }
 
             async send(signal) {
-                    let response;
-                    try {
-                        response = await this.sender(signal.query, signal);
-                        signal.response = response;
-                        this.pool.signalStream.next(signal);
-                    } catch (error) {
-                        console.log('signal error: ', error.message);
-                        signal.error = error;
-                        this.pool.signalStream.error(signal);
-                    }
-                    return signal;
+                try {
+                    signal.response = await this.sender(signal.query, signal);
+                    this.pool.signalStream.next(signal);
+                } catch (error) {
+                    signal.error = error;
+                    this.pool.signalStream.error(signal);
+                }
+                return signal;
             }
 
             impulseFilter(impulse) {
-                if (this._impulseFilter) {
+                if (!isUnset(this._impulseFilter)) {
+                    console.log('using _impulseFilter', this.impulseFilter);
                     return this._impulseFilter(impulse, this);
                 }
                 return (signal => signal.impulse === impulse);

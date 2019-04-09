@@ -2,7 +2,7 @@ const tap = require('tap');
 const {inspect} = require('util');
 const {Subject} = require('rxjs');
 
-import {bottle} from './../lib';
+import {bottle} from './../dist';
 
 tap.test('rxCatch', (suite) => {
   let rxCatch;
