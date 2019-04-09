@@ -11,10 +11,11 @@ export default (bottle) => {
          */
         return class Vector {
             constructor(name, config = {}) {
-                this.pool = lGet(config, '_pool');
-                this._sender = lGet(config, '_sender');
+                this.pool = lGet(config, 'pool');
+                this.sender = lGet(config, 'sender');
                 this.config = lGet(config, 'config', config);
-                this.schema = lGet(config, '_schema');
+                this.schema = lGet(config, 'schema');
+                this._paramsToQuery = lGet(config, 'paramsToQuery', noop);
                 this.name = name;
             }
 
@@ -38,11 +39,13 @@ export default (bottle) => {
             }
 
             set pool(value) {
-                if (!(value instanceof Pool)) throw error('Attempt to set pool to invalid value', {
-                    value,
-                    vector: this,
-                    origin: 'set pool'
-                });
+                if (!(value instanceof Pool)) {
+                    throw error('Attempt to set pool to invalid value', {
+                        value,
+                        vector: this,
+                        origin: 'set pool'
+                    });
+                }
                 this._pool = value;
             }
 
@@ -54,14 +57,13 @@ export default (bottle) => {
                 this._schema = value;
             }
 
-            make(params = {}) {
+            impulse(params = {}) {
                 return new Impulse({
                     vector: this,
                     pool: this._pool,
                     params
                 })
             }
-
 
             get sender() {
                 return this._sender;
@@ -76,6 +78,25 @@ export default (bottle) => {
                     })
                 }
                 this._sender = value;
+            }
+
+            paramsToQuery(impulse) {
+                return this._paramsToQuery(impulse.props, impulse, this);
+            }
+
+            send(signal) {
+                const promise = new Promise(async (succeed, fail) => {
+                    try {
+                        const response = await this.sender(signal);
+                        signal.response = response;
+                        succeed(signal);
+                    } catch (error) {
+                        signal.error = error;
+                        fail(signal);
+                    }
+                });
+
+                return promise;
             }
         };
     });

@@ -35,7 +35,6 @@ export default (bottle) => {
                 this.config = lGet(config, 'config', config);
             }
 
-
             get vectors() {
                 if (!this._vectors) {
                     this._vectors = new Map();
@@ -63,6 +62,18 @@ export default (bottle) => {
                     this.vectors.set(name, new Vector({pool: this, ...config}))
                 }
                 return this;
+            }
+
+            impulse(name, params) {
+                if (!this.vectors.has(name)) {
+                    throw error('attempt to use an unregistered vector', {
+                        pool: this,
+                        name,
+                        params
+                    })
+                }
+
+                this.vectors.get(name).impulse(params);
             }
         };
     });

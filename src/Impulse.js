@@ -16,32 +16,54 @@ export default (bottle) => {
     bottle.factory('IMPULSE_STATE_COMPLETE', ({Symbol}) => Symbol('IMPULSE_STATE_COMPLETE'));
 
     bottle.factory('Impulse', ({
-                                   UNSET, ifUnset, noop, Promiser, error,
-                                   isUnset,
-                                   IMPULSE_STATE_NEW,
-                                   IMPULSE_STATE_QUEUED,
-                                   IMPULSE_STATE_SENT,
-                                   IMPULSE_STATE_RESOLVED,
-                                   IMPULSE_STATE_ERROR,
-                                   IMPULSE_STATE_COMPLETE,
-                                   IMPULSE_STATE_UPDATED,
-                                   DataMap,
+                                   UNSET, ifUnset, error, Signal
                                }) => {
 
-        /**
-         * An impulse is a single call to a channel.
-         * It exists for an indefinate period before it is performed,
-         * so it can be used as a "draft" or prepared query that you
-         * build up and send.
-         *
-         * Once set, its response subscribes to the pools updates
-         * stream so that it can change (or present warnings) when
-         * the pool's other impulse updates are relevant to the response.
-         */
-        class Impulse {
+            /**
+             * An impulse is a single call to a channel.
+             * It exists for an indefinate period before it is performed,
+             * so it can be used as a "draft" or prepared query that you
+             * build up and send.
+             *
+             * Once set, its response subscribes to the pools updates
+             * stream so that it can change (or present warnings) when
+             * the pool's other impulse updates are relevant to the response.
+             */
+            class Impulse {
+                constructor({pool, vector, params}) {
+                    this.pool = pool;
+                    this.vector = vector;
+                    this._params = params;
+                }
 
+                get pool() {
+                    return this._pool;
+                }
+
+                set pool(value) {
+                    this._pool = value;
+                }
+
+                get vector() {
+                    return this._vector;
+                }
+
+                set vector(value) {
+                    this._vector = value;
+                }
+
+                get params() {
+                    return this._params;
+                }
+
+                send(){
+                    const signal = new Signal(this);
+
+                }
+            }
+
+            return Impulse;
         }
-
-        return Impulse;
-    });
+    )
+    ;
 }
