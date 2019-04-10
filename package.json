@@ -9,7 +9,7 @@
   "scripts": {
     "build": "microbundle",
     "dev": "microbundle watch",
-    "test": "microbundle;tap test src/*.test.js",
+    "test": "NODE_ENV=test microbundle;tap test src/*.test.js",
     "test:int": "microbundle;tap test integration/*.int.js"
   },
   "dependencies": {

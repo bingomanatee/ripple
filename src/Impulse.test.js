@@ -16,6 +16,12 @@ tap.test('Pool', (suite) => {
                 }
                 return puppies;
             })
+            .addVector('popPuppy', () => {
+                if (!puppies.length) {
+                    throw new Error('no puppies to pop');
+                }
+                return puppies.pop();
+            })
             .addVector('addPuppy', (puppy) => {
                 if (!puppy.id) {
                     throw new Error('puppy without id');
@@ -49,8 +55,8 @@ tap.test('Pool', (suite) => {
 
         const addPuppySub = myPool.vectors.get('addPuppy')
             .subscribe((signal) => {
-            addPuppySignals.push(signal);
-        });
+                addPuppySignals.push(signal);
+            });
 
         const puppy1impulse = myPool.impulse('addPuppy', puppy1);
         const p1sub = puppy1impulse.subscribe(signal => addPuppy1Signals.push(signal))
@@ -70,6 +76,43 @@ tap.test('Pool', (suite) => {
         p1sub.unsubscribe();
 
         streamTest.end();
+    });
+
+    suite.test('multiple impulse calls', async (multiImpulseTest) => {
+
+        const {myPool, puppies} = beforeEach();
+        const poolSignals = [];
+        const puppy1 = {id: 1, name: 'Bob'};
+        const puppy2 = {id: 2, name: 'Sally'};
+        const puppy3 = {id: 3, name: 'Sally'};
+
+        const poolSub = myPool.subscribe((signal) => {
+            poolSignals.push(signal);
+        });
+
+        await myPool.impulse('addPuppy', puppy1).send();
+        await myPool.impulse('addPuppy', puppy2).send();
+        await myPool.impulse('addPuppy', puppy3).send();
+
+        const popper = myPool.impulse('popPuppy');
+
+        const pop1 = await popper.send();
+        const pop2 = await popper.send();
+        const pop3 = await popper.send();
+        let pop4;
+
+        try {
+            pop4 = await popper.vector.sender({});
+            console.log('pop 4 sent', pop4);
+        } catch (err) {
+            console.log('error of sender:', err);
+        }
+
+        // multiImpulseTest.same(pop4.error.message, 'no puppies to pop');
+
+        // poolSub.unsubscribe();
+
+        multiImpulseTest.end();
     });
 
     suite.end();

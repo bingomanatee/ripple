@@ -34,12 +34,11 @@ export default (bottle) => {
             async send(signal) {
                 try {
                     signal.response = await this.sender(signal.query, signal);
-                    this.pool.signalStream.next(signal);
+                    return Promise.resolve(signal);
                 } catch (error) {
                     signal.error = error;
-                    this.pool.signalStream.error(signal);
+                    return Promise.reject(signal);
                 }
-                return signal;
             }
 
             impulseFilter(impulse) {

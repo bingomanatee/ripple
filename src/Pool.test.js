@@ -64,7 +64,6 @@ tap.test('Pool', (suite) => {
         try {
             await myPool.impulse('addPuppy', puppy).send()
         } catch(fail){
-            console.log('fallthrough', fail)
         }
 
         streamTest.equal(signals.length, 1);

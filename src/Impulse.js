@@ -41,9 +41,15 @@ export default (bottle) => {
                     return this.vector.pool;
                 }
 
-                async send() {
+                send() {
                     const signal = new Signal(this);
-                    return this.vector.send(signal);
+                    return this.vector.send(signal)
+                        .then(() => {
+                            this.pool.signalStream.next(signal);
+                        })
+                        .catch(() => {
+                            this.pool.signalStream.error(signal);
+                        })
                 }
 
                 get signalStream() {

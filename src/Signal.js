@@ -11,11 +11,13 @@ export default (bottle) => {
          */
         return class Signal {
             constructor(impulse) {
+                this.id = uuid();
                 this._impulse = impulse;
             }
 
             toJSON(){
                 return {
+                    id: this.id,
                     pool: this.pool.name,
                     vector: this.vector.name,
                     query: JSON.stringify(this.query)
