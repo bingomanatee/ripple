@@ -1,6 +1,4 @@
-import {Store} from '@wonderlandlabs/looking-glass-engine';
-import {filter, map} from 'rxjs/operators';
-import lget from 'lodash.get';
+import lGet from 'lodash.get';
 import uuid from 'uuid/v4';
 
 export default (bottle) => {
@@ -10,18 +8,40 @@ export default (bottle) => {
          * A channel is a named operation
          */
         return class Signal {
-            constructor(impulse) {
+            constructor(impulse, config = {}) {
                 this.id = uuid();
+                this.response = lGet(config, 'response', null);
+                this.error = lGet(config, 'error', null);
+                this._baseSignal = lGet(config, 'baseSignal', UNSET);
                 this._impulse = impulse;
             }
 
-            toJSON(){
-                return {
+            toJSON() {
+                const out = {
                     id: this.id,
                     pool: this.pool.name,
                     vector: this.vector.name,
-                    query: JSON.stringify(this.query)
+                    query: JSON.stringify(this.query),
+                    error: lGet(this, 'error', null),
+                    response: lGet(this, 'response', null)
                 }
+
+                if (!isUnset(this._baseSignal)){
+                    out.baseSignal = this._baseSignal.toJSON();
+                }
+
+                return out;
+            }
+
+            mutate(config) {
+                return new Signal(this.impulse, {
+                    ...config,
+                    baseSignal: this
+                });
+            }
+
+            get baseSignal() {
+                return this._baseSignal;
             }
 
             get pool() {

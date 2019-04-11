@@ -42,28 +42,73 @@ export default (bottle) => {
                 }
 
                 send() {
-                    const signal = new Signal(this);
-                    return this.vector.send(signal)
-                        .then(() => {
-                            this.pool.signalStream.next(signal);
-                        })
-                        .catch(() => {
-                            this.pool.signalStream.error(signal);
-                        })
+                    if (this._pending) {
+                        if (this.vector.idempotent) {
+                            return this._pending;
+                        } else {
+                            return this._pending
+                                .then(() => this.send())
+                                .catch(() => this.send());
+                        }
+                    } else {
+                        const signal = new Signal(this);
+                        this._pending = this.vector.send(signal)
+                            .then(() => {
+                                this._pending = false;
+                                this.pool.signalStream.next(signal);
+                                return signal;
+                            })
+                            .catch(() => {
+                                this._pending = false;
+                                this.pool.signalStream.error(signal);
+                                return signal;
+                            })
+                    }
+
+                    return this._pending;
                 }
 
                 get signalStream() {
                     if (!this._signalStream) {
                         this._signalStream = this.vector.signalStream
-                            .pipe(filter(this.vector.impulseFilter(this)));
+                            .pipe(
+                                filter(this.vector.impulseFilter(this),
+                                    map(this.vector.impulseMap(this))
+                                ));
                     }
                     return this._signalStream;
                 }
 
                 subscribe(...params) {
-                    return this.signalStream.subscribe(...params);
+                    if (this._completed) {
+                        throw error('cannot subscribe to completed impulse', {
+                            impulse: this, params
+                        });
+                    }
+                    const sub = this.signalStream.subscribe(...params);
+                    this._subs.push(sub);
+                    return sub;
                 }
 
+                get _subs() {
+                    if (!this.__subs) {
+                        this.__subs = [];
+                    }
+                    return this.__subs;
+                }
+
+                complete() {
+                    this._completed = true;
+                    if (this._signalStream) {
+                        this._signalStream.complete();
+                    }
+
+                    if (this.__subs) {
+                        this.__subs.forEach(s => s.unsubscribe());
+                    }
+
+                    delete this.__subs;
+                }
             }
 
             propper(Impulse)
@@ -82,6 +127,5 @@ export default (bottle) => {
 
             return Impulse;
         }
-    )
-    ;
+    );
 }

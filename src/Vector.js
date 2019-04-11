@@ -16,7 +16,9 @@ export default (bottle) => {
                 this.config = lGet(config, 'config', config);
                 this.schema = lGet(config, 'schema');
                 this._impulseFilter = lGet(config, 'impulseFilter', UNSET);
+                this._impulseMap = lGet(config, 'impulseMap', UNSET);
                 this._paramsToQuery = lGet(config, 'paramsToQuery', noop);
+                this.idempotent = lGet(config, 'idempotent', false)
                 this.name = name;
             }
 
@@ -42,11 +44,14 @@ export default (bottle) => {
             }
 
             impulseFilter(impulse) {
-                if (!isUnset(this._impulseFilter)) {
-                    console.log('using _impulseFilter', this.impulseFilter);
-                    return this._impulseFilter(impulse, this);
-                }
-                return (signal => signal.impulse === impulse);
+                const id = impulse.id;
+                return isUnset(this._impulseFilter) ? (signal => signal.impulse.id === id)
+                    : this._impulseFilter(impulse, this);
+            }
+
+            impulseMap(impulse) {
+                return isUnset(this._impulseMap) ? noop
+                    : this._impulseMap(impulse, this);
             }
 
             get signalStream() {
@@ -63,6 +68,10 @@ export default (bottle) => {
         };
 
         propper(Vector)
+            .addProp('idempotent', {
+                type: 'boolean',
+                defaultValue: false
+            })
             .addProp('pool', {
                 required: true, type: 'object',
                 onInvalid: (...params) => {
