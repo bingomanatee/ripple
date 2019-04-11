@@ -16,7 +16,7 @@ tap.test('Pool', (suite) => {
                         return Math.max(max, p.id);
                     }, 0) + 1;
 
-                    let {result} = await myPool.impulse('addPuppy', {
+                    let {result} = await signal.pool.impulse('addPuppy', {
                         id: maxId,
                         name
                     }).send();
@@ -158,6 +158,8 @@ tap.test('Pool', (suite) => {
             singleTest.equal(signals.length, 8);
             // four for addPuppy, 4 for all the makeBobs
 
+            poolSub.unsubscribe();
+
             singleTest.end();
         });
 
@@ -186,6 +188,7 @@ tap.test('Pool', (suite) => {
             singleTest.equal(signals.length, 2);
             // one for addPuppy, another for all the makeBobs
 
+            poolSub.unsubscribe();
             singleTest.end();
         })
         iTest.end();
@@ -245,5 +248,6 @@ tap.test('Pool', (suite) => {
 
         crossTest.end();
     });
+
     suite.end();
 });
