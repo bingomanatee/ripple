@@ -30,7 +30,7 @@ tap.test('Pool', (suite) => {
                         return Math.max(max, p.id);
                     }, 0) + 1;
 
-                    let {result} = await myPool.impulse('addPuppy', {
+                    let {result} = await signal.pool.impulse('addPuppy', {
                         id: maxId,
                         name
                     }).send();

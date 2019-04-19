@@ -22,6 +22,7 @@
     "lodash.flattendeep": "^4.4.0",
     "lodash.get": "^4.4.2",
     "promise-polyfill": "^8.1.0",
+    "query-string": "^6.4.2",
     "rxjs": "^6.4.0",
     "url-join": "^4.0.0",
     "uuid": "^3.3.2",

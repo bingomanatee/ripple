@@ -6,7 +6,7 @@ import propper from '@wonderlandlabs/propper';
 
 export default (bottle) => {
 
-    bottle.factory('Pool', function ({Vector, error, noop}) {
+    bottle.factory('Pool', function ({Vector, error}) {
         class Pool {
             constructor(name, config = {}) {
                 this.name = name;
@@ -34,7 +34,7 @@ export default (bottle) => {
                 return this;
             }
 
-            impulse(name, params) {
+            impulse(name, ...params) {
                 if (!this.vectors.has(name)) {
                     throw error('attempt to use an unregistered vector', {
                         pool: this,
