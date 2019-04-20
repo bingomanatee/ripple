@@ -34,7 +34,7 @@ export default (bottle) => {
                 return this;
             }
 
-            impulse(name, params) {
+            impulse(name, ...params) {
                 if (!this.vectors.has(name)) {
                     throw error('attempt to use an unregistered vector', {
                         pool: this,

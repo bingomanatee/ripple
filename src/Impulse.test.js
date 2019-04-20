@@ -11,7 +11,7 @@ tap.test('Pool', (suite) => {
         let puppies = [];
         let myPool = new b.container.Pool('puppies')
             .addVector('makePuppy', {
-                sender: async (name, signal) => {
+                sender: async ([name], signal) => {
                     let maxId = puppies.reduce((max, p) => {
                         return Math.max(max, p.id);
                     }, 0) + 1;
@@ -25,7 +25,7 @@ tap.test('Pool', (suite) => {
                 idempotent: true
             })
             .addVector('makePuppyManyTimes', {
-                sender: async (name, signal) => {
+                sender: async ([name], signal) => {
                     let maxId = puppies.reduce((max, p) => {
                         return Math.max(max, p.id);
                     }, 0) + 1;
@@ -38,7 +38,7 @@ tap.test('Pool', (suite) => {
                 },
                 idempotent: false
             })
-            .addVector('killPuppy', (id) => {
+            .addVector('killPuppy', ([id]) => {
                 let i = puppies.findIndex(p => p.id === id);
                 if (i >= 0) {
                     delete puppies.splice(i, 1);
@@ -52,7 +52,7 @@ tap.test('Pool', (suite) => {
                 return puppies.pop();
             })
             .addVector('addPuppy', {
-                sender: (puppy) => {
+                sender: ([puppy]) => {
                     if (!puppy.id) {
                         throw new Error('puppy without id');
                     }
@@ -65,9 +65,9 @@ tap.test('Pool', (suite) => {
                     return puppies;
                 },
                 impulseFilter(impulse) {
-                    const puppyId = impulse.params.id;
+                    const puppyId = impulse.params[0].id;
                     return (signal) => {
-                        return signal.query.id === puppyId;
+                        return signal.query[0].id === puppyId;
                     }
                 }
             });
@@ -172,7 +172,7 @@ tap.test('Pool', (suite) => {
 
         console.log('impulse updates: :', inspect(updates));
         crossTest.equal(updates.length, 2, 'has two updates');
-        crossTest.same(updates[1], puppy1v2, 'has version 2 of puppy');
+        crossTest.same(updates[1], [puppy1v2], 'has version 2 of puppy');
 
         crossTest.end();
     });

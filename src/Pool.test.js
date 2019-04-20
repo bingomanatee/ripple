@@ -9,7 +9,7 @@ tap.test('Pool', (suite) => {
 
         const puppies = [];
         let myPool = new b.container.Pool('puppies')
-            .addVector('addPuppy', (puppy) => {
+            .addVector('addPuppy', ([puppy]) => {
                 if (!puppy.id) {
                     throw new Error('puppy without id');
                 }

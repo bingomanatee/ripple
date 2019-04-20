@@ -110,6 +110,8 @@ export default (bottle) => {
 
             propper(Impulse)
                 .addProp('params', {
+                    type: 'array',
+                    required: true
                 })
                 .addProp('vector', {
                     required: true,
