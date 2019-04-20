@@ -32,11 +32,6 @@ export default (bottle) => {
                     this._params = lGet(config, 'params', config);
                 }
 
-                get params() {
-                    // @TODO: Immutable?
-                    return this._params;
-                }
-
                 get pool() {
                     return this.vector.pool;
                 }
@@ -112,6 +107,8 @@ export default (bottle) => {
             }
 
             propper(Impulse)
+                .addProp('params', {
+                })
                 .addProp('vector', {
                     required: true,
                     type: 'object',

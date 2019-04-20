@@ -51,38 +51,17 @@ tap.test('Pool', (suite) => {
                 }
                 return puppies.pop();
             })
-            .addVector('addPuppy', {
-                sender: (puppy) => {
-                    if (!puppy.id) {
-                        throw new Error('puppy without id');
-                    }
-                    let i = puppies.findIndex(p => p.id === puppy.id);
-                    if (i >= 0) {
-                        puppies[i] = puppy;
-                    } else {
-                        puppies.push(puppy);
-                    }
-                    return puppy;
-                },
-                impulseFilter: (impulse, vector) => {
-                    const {UNSET, isUnset} = b.container;
-                    const id = lGet(impulse, 'params.id', UNSET);
-                    if (isUnset(id)) {
-                        return () => false;
-                    }
-
-                    return (signal) => {
-                        // listen to any other addPuppy
-                        if (!(signal.vector.name === vector.name)) {
-                            return false;
-                        }
-                        const signalId = lGet(signal, 'query.id', UNSET);
-                        if (isUnset(signalId)) {
-                            return false;
-                        }
-                        return signalId === id;
-                    }
+            .addVector('addPuppy', (puppy) => {
+                if (!puppy.id) {
+                    throw new Error('puppy without id');
                 }
+                let i = puppies.findIndex(p => p.id === puppy.id);
+                if (i >= 0) {
+                    puppies[i] = puppy;
+                } else {
+                    puppies.push(puppy);
+                }
+                return puppies;
             });
 
         let out = {Pool: b.container.Pool, myPool, puppies};
@@ -117,6 +96,7 @@ tap.test('Pool', (suite) => {
 
         streamTest.equal(poolSignals.length, 3);
         streamTest.equal(addPuppySignals.length, 2);
+        console.log('addPuppy1signals:', inspect(addPuppy1Signals.map(s => s.toJSON())));
         streamTest.equal(addPuppy1Signals.length, 1);
 
         streamTest.same(puppies, [puppy2]);
@@ -128,73 +108,7 @@ tap.test('Pool', (suite) => {
         streamTest.end();
     });
 
-    suite.test('idempotence', (iTest) => {
-
-        iTest.test('making clones', async(singleTest) => {
-            const {myPool, puppies} = beforeEach();
-
-            const signals = [];
-
-            const poolSub = myPool.subscribe((signal) => {
-                signals.push(signal);
-            }, (signal) => {signals.push({badSignal: signal})});
-
-            const makeBobImpulse = myPool.impulse('makePuppyManyTimes', 'Bob');
-
-            await Promise.all(
-                [
-                    makeBobImpulse.send(),
-                    makeBobImpulse.send(),
-                    makeBobImpulse.send(),
-                    makeBobImpulse.send(),
-                ]
-            );
-
-            singleTest.equal(puppies.length, 4);
-            singleTest.equal(puppies[0].name, 'Bob');
-            singleTest.equal(puppies[1].name, 'Bob');
-            singleTest.equal(puppies[2].name, 'Bob');
-            singleTest.equal(puppies[3].name, 'Bob');
-            singleTest.equal(signals.length, 8);
-            // four for addPuppy, 4 for all the makeBobs
-
-            poolSub.unsubscribe();
-
-            singleTest.end();
-        });
-
-        iTest.test('re-making the same puppy', async(singleTest) => {
-            const {myPool, puppies} = beforeEach();
-
-            const signals = [];
-
-            const poolSub = myPool.subscribe((signal) => {
-                signals.push(signal);
-            }, (signal) => {signals.push({badSignal: signal})});
-
-            const makeBobImpulse = myPool.impulse('makePuppy', 'Bob');
-
-            await Promise.all(
-                [
-                    makeBobImpulse.send(),
-                    makeBobImpulse.send(),
-                    makeBobImpulse.send(),
-                    makeBobImpulse.send(),
-                ]
-            );
-
-            singleTest.equal(puppies.length, 1);
-            singleTest.equal(puppies[0].name, 'Bob');
-            singleTest.equal(signals.length, 2);
-            // one for addPuppy, another for all the makeBobs
-
-            poolSub.unsubscribe();
-            singleTest.end();
-        })
-        iTest.end();
-    });
-
-    suite.test('multiple impulse calls', {buffered: true}, async (multiImpulseTest) => {
+    suite.test('multiple impulse calls', async (multiImpulseTest) => {
 
         const {myPool, puppies} = beforeEach();
         const poolSignals = [];
@@ -217,12 +131,18 @@ tap.test('Pool', (suite) => {
         const pop1 = await popper.send();
         const pop2 = await popper.send();
         const pop3 = await popper.send();
-        const pop4 = await popper.send();
+        let pop4;
 
-        multiImpulseTest.same(puppies, []);
-        multiImpulseTest.same(lGet(pop4, 'error.message'), 'no puppies to pop', 'comparing errors');
+        try {
+            pop4 = await popper.vector.sender({});
+            console.log('pop 4 sent', pop4);
+        } catch (err) {
+            console.log('error of sender:', err);
+        }
 
-        poolSub.unsubscribe();
+        // multiImpulseTest.same(pop4.error.message, 'no puppies to pop');
+
+        // poolSub.unsubscribe();
 
         multiImpulseTest.end();
     });
@@ -244,7 +164,7 @@ tap.test('Pool', (suite) => {
 
         impulse1sub.unsubscribe();
         crossTest.equal(updates.length, 2);
-        crossTest.same(updates[1], puppy1v2);
+        crossTest.same(updates[1], [puppy1v2]);
 
         crossTest.end();
     });
