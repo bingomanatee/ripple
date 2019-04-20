@@ -51,17 +51,25 @@ tap.test('Pool', (suite) => {
                 }
                 return puppies.pop();
             })
-            .addVector('addPuppy', (puppy) => {
-                if (!puppy.id) {
-                    throw new Error('puppy without id');
+            .addVector('addPuppy', {
+                sender: (puppy) => {
+                    if (!puppy.id) {
+                        throw new Error('puppy without id');
+                    }
+                    let i = puppies.findIndex(p => p.id === puppy.id);
+                    if (i >= 0) {
+                        puppies[i] = puppy;
+                    } else {
+                        puppies.push(puppy);
+                    }
+                    return puppies;
+                },
+                impulseFilter(impulse) {
+                    const puppyId = impulse.params.id;
+                    return (signal) => {
+                        return signal.query.id === puppyId;
+                    }
                 }
-                let i = puppies.findIndex(p => p.id === puppy.id);
-                if (i >= 0) {
-                    puppies[i] = puppy;
-                } else {
-                    puppies.push(puppy);
-                }
-                return puppies;
             });
 
         let out = {Pool: b.container.Pool, myPool, puppies};
@@ -80,23 +88,21 @@ tap.test('Pool', (suite) => {
 
         const poolSub = myPool.subscribe((signal) => {
             poolSignals.push(signal);
-        });
+        }, (err) => {console.log('error in ms pool sub: ', err)});
 
         const addPuppySub = myPool.vectors.get('addPuppy')
             .subscribe((signal) => {
                 addPuppySignals.push(signal);
-            });
+            }, (err) => console.log('err in addPuppySub ms', err));
 
         const puppy1impulse = myPool.impulse('addPuppy', puppy1);
-        const p1sub = puppy1impulse.subscribe(signal => addPuppy1Signals.push(signal))
-
+        const p1sub = puppy1impulse.subscribe(signal => addPuppy1Signals.push(signal));
         await puppy1impulse.send();
         await myPool.impulse('addPuppy', puppy2).send();
         await myPool.impulse('killPuppy', puppy1.id).send();
 
         streamTest.equal(poolSignals.length, 3);
         streamTest.equal(addPuppySignals.length, 2);
-        console.log('addPuppy1signals:', inspect(addPuppy1Signals.map(s => s.toJSON())));
         streamTest.equal(addPuppy1Signals.length, 1);
 
         streamTest.same(puppies, [puppy2]);
@@ -132,17 +138,17 @@ tap.test('Pool', (suite) => {
         const pop2 = await popper.send();
         const pop3 = await popper.send();
         let pop4;
-
+        let error;
         try {
             pop4 = await popper.vector.sender({});
             console.log('pop 4 sent', pop4);
         } catch (err) {
-            console.log('error of sender:', err);
+            error = err;
         }
 
-        // multiImpulseTest.same(pop4.error.message, 'no puppies to pop');
+        multiImpulseTest.same(error.message, 'no puppies to pop');
 
-        // poolSub.unsubscribe();
+        poolSub.unsubscribe();
 
         multiImpulseTest.end();
     });
@@ -150,21 +156,23 @@ tap.test('Pool', (suite) => {
     suite.test('cross-impulse signaling', {buffered: true}, async (crossTest) => {
         const {myPool} = beforeEach();
         const puppy1 = {id: 1, name: 'Bob'};
-        const puppy1v2 = {id: 1, name: 'Bobby'};
+        const puppy1v2 = {id: 1, name: 'Robert'};
 
         const updates = [];
 
         const puppy1impulse = myPool.impulse('addPuppy', puppy1);
         const impulse1sub = puppy1impulse.subscribe((signal) => {
-            updates.push(signal.response);
+            updates.push(signal.query);
         }, (err) => {console.log('puppy sub error:', err)});
 
         await puppy1impulse.send();
         await myPool.impulse('addPuppy', puppy1v2).send();
 
         impulse1sub.unsubscribe();
-        crossTest.equal(updates.length, 2);
-        crossTest.same(updates[1], [puppy1v2]);
+
+        console.log('impulse updates: :', inspect(updates));
+        crossTest.equal(updates.length, 2, 'has two updates');
+        crossTest.same(updates[1], puppy1v2, 'has version 2 of puppy');
 
         crossTest.end();
     });

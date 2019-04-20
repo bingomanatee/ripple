@@ -1,4 +1,5 @@
 import lGet from 'lodash.get';
+import uuid from 'uuid/v4';
 import propper from '@wonderlandlabs/propper';
 import {filter, map, startWith} from 'rxjs/operators';
 
@@ -28,8 +29,9 @@ export default (bottle) => {
              */
             class Impulse {
                 constructor(config = {}) {
+                    this.id = uuid();
                     this.vector = lGet(config, 'vector');
-                    this._params = lGet(config, 'params', config);
+                    this.params = lGet(config, 'params', config);
                 }
 
                 get pool() {

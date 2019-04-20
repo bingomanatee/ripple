@@ -23,7 +23,8 @@ export default (bottle) => {
                     vector: this.vector.name,
                     query: JSON.stringify(this.query),
                     error: lGet(this, 'error', null),
-                    response: lGet(this, 'response', null)
+                    response: lGet(this, 'response', null),
+                    impulseId: this.impulse.id
                 }
 
                 if (!isUnset(this._baseSignal)){
