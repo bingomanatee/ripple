@@ -6,7 +6,7 @@ import propper from '@wonderlandlabs/propper';
 
 export default (bottle) => {
 
-    bottle.factory('Pool', function ({Vector, error, noop}) {
+    bottle.factory('Pool', function ({Vector, error}) {
         class Pool {
             constructor(name, config = {}) {
                 this.name = name;

@@ -10,16 +10,6 @@ const {
     axios
 } = myBottle.container;
 
-export {
-    Pool,
-    RestPool,
-    Vector,
-    Impulse,
-    bottle,
-    DataMap,
-    axios
-}
-
 export default {
     Pool,
     RestPool,

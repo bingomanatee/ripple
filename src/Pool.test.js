@@ -27,7 +27,7 @@ tap.test('Pool', (suite) => {
         vectorTest.ok(myPool.vectors.has('addPuppy'));
 
         vectorTest.end();
-    })
+    });
 
     suite.test('stream', async (streamTest) => {
 
