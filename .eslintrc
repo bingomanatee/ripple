@@ -3,6 +3,10 @@
     "node": true,
     "es6": true
   },
+  "parserOptions": {
+    "ecmaVersion": 2019,
+    "sourceType": "module",
+  },
   "ecmaFeatures": {
     "arrowFunctions": true,
     "blockBindings": true,
@@ -117,7 +121,7 @@
     "consistent-this": [ 2, "self" ],
     "eol-last": 2,
     "func-style": [ 2, "expression" ],
-    "indent": [ 2, 4, { "SwitchCase": 1 } ],
+    "indent": [ 2, 2, { "SwitchCase": 1 } ],
     "key-spacing": [ 2, { "beforeColon": false, "afterColon": true } ],
     "new-cap": 2,
     "new-parens": 2,
@@ -134,18 +138,18 @@
     "no-trailing-spaces": [ 2, { "skipBlankLines": true } ],
     "no-unneeded-ternary": 2,
     "object-curly-spacing": [ 2, "always" ],
-    "one-var": [ 2, "always" ],
+    "one-var": [ 2, "never" ],
     "operator-linebreak": [ 2, "none" ],
     "quote-props": [ 2, "always" ],
-    "quotes": [ 2, "double", "avoid-escape" ],
+    "quotes": [ 2, "single", "avoid-escape" ],
     "semi": [ 2, "always" ],
-    "space-after-keywords": [ 2, "always" ],
+    "keyword-spacing": [1,{
+      "before": true
+    }],
     "space-before-blocks": [ 2, "always" ],
     "space-before-function-paren": [ 2, "never" ],
-    "space-before-keywords": [ 2, "always" ],
-    "space-in-parens": [ 2, "always" ],
+    "space-in-parens": [ 2, "never" ],
     "space-infix-ops": 2,
-    "space-return-throw-case": 2,
     "space-unary-ops": [ 2, { "words": true, "nonwords": false } ],
     "spaced-comment": [ 2, "always" ],
 
@@ -153,7 +157,7 @@
     "arrow-spacing": 2,
     "constructor-super": 2,
     "generator-star-spacing": [ 2, { "before": true, "after": false } ],
-    "no-arrow-condition": 1,
+    "no-confusing-arrow": 1,
     "no-class-assign": 2,
     "no-const-assign": 2,
     "no-dupe-class-members": 2,
