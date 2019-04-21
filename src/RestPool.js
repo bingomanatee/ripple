@@ -1,4 +1,3 @@
-import {Store} from '@wonderlandlabs/looking-glass-engine';
 import lGet from 'lodash.get';
 import axios from 'axios';
 import urlJoin from 'url-join';
@@ -19,22 +18,26 @@ export default (bottle) => {
                 this.prepQuery = lGet(config, 'prepQuery', null);
                 this.identityField = lGet(config, 'identityField', 'id');
                 this.responseToData = lGet(config, 'responseToData', noop);
-                this.dataToClass = lGet(config, 'dataToClass', noop);
                 this.connection = lGet(config, 'connection', axios);
                 this.impulseParamsToQuery = lGet(config, 'impulseParamsToQuery', impulseParamsToQuery);
 
                 let restActions = lGet(config, 'restActions', UNSET);
                 if (isUnset(restActions)) {
                     REST_ACTIONS.forEach((action) => {
-                        this.addVector(action, restVectors[action]);
+                        let config = Object.assign({},  restVectors[action]);
+                        const sender = config.sender;
+                        delete config.sender;
+                        this.addVector(action, sender, config);
                     });
                 } else {
                     restActions.forEach((action) => {
                         if (typeof action === 'string') {
-                            this.addVector(action, restVectors[action]);
+                            let config = Object.assign({},  restVectors[action]);
+                            const sender = config.sender;
+                            delete config.sender;
+                            this.addVector(action, sender, config);
                         } else if (Array.isArray(action)) {
-                            const [name, config] = action;
-                            this.addVector(name, config);
+                            this.addVector(...action);
                         } else {
                             throw error('strange action for pool ' + name, {action});
                         }
@@ -85,12 +88,6 @@ export default (bottle) => {
                     return noop;
                 },
                 required: false
-            })
-            .addProp('dataToClass', {
-                type: 'function',
-                defaultValue() {
-                    return noop;
-                },
             })
             .addProp('baseURL', {
                 type: 'string',

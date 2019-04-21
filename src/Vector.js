@@ -10,9 +10,9 @@ export default (bottle) => {
          * A channel is a named operation
          */
         class Vector {
-            constructor(name, config = {}) {
-                this.pool = lGet(config, 'pool');
-                this.sender = lGet(config, 'sender');
+            constructor(name, sender, pool, config = {}) {
+                this.sender = sender;
+                this.pool = pool;
                 this.config = lGet(config, 'config', config);
                 this.schema = lGet(config, 'schema');
                 this._makeImpulseStream = lGet(config, 'makeImpulseStream', UNSET);
@@ -66,7 +66,7 @@ export default (bottle) => {
             subscribe(...params) {
                 return this.signalStream.subscribe(...params);
             }
-        };
+        }
 
         propper(Vector)
             .addProp('idempotent', {

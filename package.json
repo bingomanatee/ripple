@@ -14,7 +14,6 @@
     "test:intr": "tap test integration/*.int-test.js"
   },
   "dependencies": {
-    "@wonderlandlabs/looking-glass-engine": "^1.0.12",
     "@wonderlandlabs/propper": "^2.0.4",
     "axios": "^0.18.0",
     "bottlejs": "^1.7.2",

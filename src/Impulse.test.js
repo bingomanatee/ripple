@@ -11,8 +11,7 @@ tap.test('Pool', (suite) => {
 
         let puppies = [];
         let myPool = new b.container.Pool('puppies')
-            .addVector('makePuppy', {
-                sender: async ([name], signal) => {
+            .addVector('makePuppy', async ([name], signal) => {
                     let maxId = puppies.reduce((max, p) => {
                         return Math.max(max, p.id);
                     }, 0) + 1;
@@ -23,10 +22,10 @@ tap.test('Pool', (suite) => {
                     }).send();
                     return result;
                 },
-                idempotent: true
-            })
-            .addVector('makePuppyManyTimes', {
-                sender: async ([name], signal) => {
+                {
+                    idempotent: true
+                })
+            .addVector('makePuppyManyTimes', async ([name], signal) => {
                     let maxId = puppies.reduce((max, p) => {
                         return Math.max(max, p.id);
                     }, 0) + 1;
@@ -36,9 +35,11 @@ tap.test('Pool', (suite) => {
                         name
                     }).send();
                     return result;
-                },
-                idempotent: false
-            })
+                }, {
+
+                    idempotent: false
+                }
+            )
             .addVector('killPuppy', ([id]) => {
                 let i = puppies.findIndex(p => p.id === id);
                 if (i >= 0) {
@@ -52,8 +53,7 @@ tap.test('Pool', (suite) => {
                 }
                 return puppies.pop();
             })
-            .addVector('addPuppy', {
-                sender: ([puppy]) => {
+            .addVector('addPuppy', ([puppy]) => {
                     if (!puppy.id) {
                         throw new Error('puppy without id');
                     }
@@ -65,31 +65,32 @@ tap.test('Pool', (suite) => {
                     }
                     return puppies;
                 },
-                makeImpulseStream(impulse){
-                    const puppyId = impulse.params[0].id;
-                    return impulse.pool.signalStream
-                        .pipe(filter(signal => {
-                            let show = false;
-                            switch (signal.vector.name) {
-                                case 'killPuppy':
-                                    show = signal.query[0] === puppyId;
-                                    break;
+                {
+                    makeImpulseStream(impulse) {
+                        const puppyId = impulse.params[0].id;
+                        return impulse.pool.signalStream
+                            .pipe(filter(signal => {
+                                let show = false;
+                                switch (signal.vector.name) {
+                                    case 'killPuppy':
+                                        show = signal.query[0] === puppyId;
+                                        break;
 
-                                case 'addPuppy':
-                                    show = signal.query[0].id === puppyId;
-                                    break;
-                                case 'makePuppy':
-                                    show = signal.query[0].id === puppyId;
-                                    break;
-                                case 'makePuppyManyTimes':
-                                    show = signal.query[0].id === puppyId;
-                                    break;
-                            }
-                            return show;
-                        }))
+                                    case 'addPuppy':
+                                        show = signal.query[0].id === puppyId;
+                                        break;
+                                    case 'makePuppy':
+                                        show = signal.query[0].id === puppyId;
+                                        break;
+                                    case 'makePuppyManyTimes':
+                                        show = signal.query[0].id === puppyId;
+                                        break;
+                                }
+                                return show;
+                            }))
 
-                },
-            });
+                    },
+                });
 
         let out = {Pool: b.container.Pool, myPool, puppies};
         return out;
@@ -107,7 +108,9 @@ tap.test('Pool', (suite) => {
 
         const poolSub = myPool.subscribe((signal) => {
             poolSignals.push(signal);
-        }, (err) => {console.log('error in ms pool sub: ', err)});
+        }, (err) => {
+            console.log('error in ms pool sub: ', err)
+        });
 
         const addPuppySub = myPool.vectors.get('addPuppy')
             .subscribe((signal) => {
@@ -159,12 +162,8 @@ tap.test('Pool', (suite) => {
         const pop3 = await popper.send();
         let pop4;
         let error;
-        try {
-            pop4 = await popper.vector.sender({});
-            console.log('pop 4 sent', pop4);
-        } catch (err) {
-            error = err;
-        }
+        pop4 = await popper.send();
+        error = pop4.error;
 
         multiImpulseTest.same(error.message, 'no puppies to pop');
 
@@ -183,14 +182,15 @@ tap.test('Pool', (suite) => {
         const puppy1impulse = myPool.impulse('addPuppy', puppy1);
         const impulse1sub = puppy1impulse.subscribe((signal) => {
             updates.push(signal.query);
-        }, (err) => {console.log('puppy sub error:', err)});
+        }, (err) => {
+            console.log('puppy sub error:', err)
+        });
 
         await puppy1impulse.send();
         await myPool.impulse('addPuppy', puppy1v2).send();
 
         impulse1sub.unsubscribe();
 
-        console.log('impulse updates: :', inspect(updates));
         crossTest.equal(updates.length, 2, 'has two updates');
         crossTest.same(updates[1], [puppy1v2], 'has version 2 of puppy');
 

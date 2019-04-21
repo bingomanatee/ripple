@@ -1,6 +1,4 @@
-import {Store} from '@wonderlandlabs/looking-glass-engine';
 import {Subject} from 'rxjs';
-import {filter, map} from 'rxjs/operators';
 import lGet from 'lodash.get';
 import propper from '@wonderlandlabs/propper';
 
@@ -11,10 +9,11 @@ export default (bottle) => {
             constructor(name, config = {}) {
                 this.name = name;
                 this.vectors = lGet(config, '_vectors', new Map());
+                this.vectors.forEach(v => v.pool = this);
                 this.config = lGet(config, 'config', config);
             }
 
-            addVector(name, config, force = false) {
+            addVector(name, sender, config, force = false) {
                 if (this.vectors.has(name) && !force) {
                     throw error('Attempt to redefine ' + name, {
                         config,
@@ -23,13 +22,11 @@ export default (bottle) => {
                     })
                 }
 
-                if (config instanceof Vector) {
-                    config.pool = this;
-                    this.vectors.set(name, config);
-                } else if (typeof config === 'function') {
-                    this.vectors.set(name, new Vector(name, {pool: this, sender: config}));
+                if (sender instanceof Vector) {
+                    sender.pool = this;
+                    this.vectors.set(name, sender);
                 } else {
-                    this.vectors.set(name, new Vector(name, {...config, pool: this, ...config}))
+                    this.vectors.set(name, new Vector(name, sender, this, config))
                 }
                 return this;
             }
