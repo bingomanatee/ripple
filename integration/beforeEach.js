@@ -1,44 +1,32 @@
-import {bottle} from "../lib";
+import {bottle} from "../dist";
+import {inspect} from 'util';
 
-export default async () => {
+export default async function () {
     let RestPool;
     let userPool;
     const b = bottle();
     RestPool = b.container.RestPool;
-    const DataMap = b.container.DataMap;
 
     userPool = new RestPool('user', {
-        rootURL: 'http://localhost:9000/user',
-        idField: '_id',
-        toDataMap(response, impulse) {
-            const result = new DataMap([], impulse.pool);
-            switch (impulse.channel.name) {
-                case 'post':
-                    result.set(response[impulse.pool.idField], response);
-                    break;
-                case 'get':
-                    result.set(response[impulse.pool.idField], response);
-                    break;
-                case 'put':
-                    result.set(response[impulse.pool.idField], response);
-                    break;
+        baseURL: 'http://localhost:9000/user',
+        identityField: '_id',
+        responseToData(response, impulse) {
+            let data = response.data;
+            switch (impulse.vector.name) {
                 case 'getAll':
-                    response.docs.forEach((doc) => {
-                        result.set(doc[impulse.pool.idField], doc);
-                    });
+                    data = Object.values(data.docs);
                     break;
             }
-            return result;
+            return data;
         }
     });
-    // purging all data
     const allImpulse = userPool.impulse('getAll');
-    await allImpulse.send();
+    let signal = await allImpulse.send();
 
-    let keys = Array.from(allImpulse.response.keys());
-    while (keys.length) {
-        let key = keys.pop();
-        await userPool.impulse('delete', key).send();
+    while (signal.response.length) {
+        const record = signal.response.pop();
+        if (!(record && record._id)) return;
+        await userPool.impulse('delete', record._id).send();
     }
 
     return {userPool};

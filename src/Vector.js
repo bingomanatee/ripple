@@ -15,12 +15,13 @@ export default (bottle) => {
                 this.sender = lGet(config, 'sender');
                 this.config = lGet(config, 'config', config);
                 this.schema = lGet(config, 'schema');
-                this._impulseFilter = lGet(config, 'impulseFilter', UNSET);
-                this._impulseMap = lGet(config, 'impulseMap', UNSET);
+                this._makeImpulseStream = lGet(config, 'makeImpulseStream', UNSET);
                 this._paramsToQuery = lGet(config, 'paramsToQuery', noop);
                 this.idempotent = lGet(config, 'idempotent', false)
                 this.name = name;
             }
+
+            TYPE='VECTOR'
 
             impulse(params = {}) {
                 return new Impulse({
@@ -36,6 +37,9 @@ export default (bottle) => {
             async send(signal) {
                 try {
                     signal.response = await this.sender(signal.query, signal);
+                    if (!(isUnset(signal.impulse.response))) {
+                        signal.impulse.response = signal.response;
+                    }
                     return Promise.resolve(signal);
                 } catch (error) {
                     signal.error = error;
@@ -43,15 +47,12 @@ export default (bottle) => {
                 }
             }
 
-            impulseFilter(impulse) {
-                const id = impulse.id;
-                return isUnset(this._impulseFilter) ? (signal => signal.impulse.id === id)
-                    : this._impulseFilter(impulse, this);
-            }
-
-            impulseMap(impulse) {
-                return isUnset(this._impulseMap) ? noop
-                    : this._impulseMap(impulse, this);
+            makeImpulseStream(impulse){
+                if(!isUnset(this._makeImpulseStream)){
+                    return this._makeImpulseStream(impulse, this);
+                }
+                const pool = impulse.pool;
+                return pool.signalStream.pipe(filter(signal => signal.impulse.id === impulse.id))
             }
 
             get signalStream() {

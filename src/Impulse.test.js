@@ -2,6 +2,7 @@ const tap = require('tap');
 const lGet = require('lodash.get');
 const {bottle} = require('./../dist');
 const {inspect} = require('util');
+import {filter, map} from 'rxjs/operators';
 
 tap.test('Pool', (suite) => {
 
@@ -64,12 +65,30 @@ tap.test('Pool', (suite) => {
                     }
                     return puppies;
                 },
-                impulseFilter(impulse) {
+                makeImpulseStream(impulse){
                     const puppyId = impulse.params[0].id;
-                    return (signal) => {
-                        return signal.query[0].id === puppyId;
-                    }
-                }
+                    return impulse.pool.signalStream
+                        .pipe(filter(signal => {
+                            let show = false;
+                            switch (signal.vector.name) {
+                                case 'killPuppy':
+                                    show = signal.query[0] === puppyId;
+                                    break;
+
+                                case 'addPuppy':
+                                    show = signal.query[0].id === puppyId;
+                                    break;
+                                case 'makePuppy':
+                                    show = signal.query[0].id === puppyId;
+                                    break;
+                                case 'makePuppyManyTimes':
+                                    show = signal.query[0].id === puppyId;
+                                    break;
+                            }
+                            return show;
+                        }))
+
+                },
             });
 
         let out = {Pool: b.container.Pool, myPool, puppies};
@@ -103,7 +122,8 @@ tap.test('Pool', (suite) => {
 
         streamTest.equal(poolSignals.length, 3);
         streamTest.equal(addPuppySignals.length, 2);
-        streamTest.equal(addPuppy1Signals.length, 1);
+        streamTest.equal(addPuppy1Signals.length, 2); // one for add, one for kill
+        streamTest.same(addPuppy1Signals.map(s => s.vector.name), ['addPuppy', 'killPuppy']);
 
         streamTest.same(puppies, [puppy2]);
 

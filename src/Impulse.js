@@ -14,7 +14,7 @@ export default (bottle) => {
     bottle.factory('IMPULSE_STATE_COMPLETE', ({Symbol}) => Symbol('IMPULSE_STATE_COMPLETE'));
 
     bottle.factory('Impulse', ({
-                                   UNSET, error, Signal
+                                   UNSET, error, Signal, isUnset
                                }) => {
 
             /**
@@ -38,6 +38,17 @@ export default (bottle) => {
                     return this.vector.pool;
                 }
 
+                toJSON() {
+                    return {
+                        id: this.id,
+                        TYPE: 'Impulse',
+                        vector: this.vector.name,
+                        params: this.params,
+                        sent: this.sent,
+                        response: this.response
+                    };
+                }
+
                 send() {
                     if (this._pending) {
                         if (this.vector.idempotent) {
@@ -50,8 +61,11 @@ export default (bottle) => {
                     } else {
                         const signal = new Signal(this);
                         this._pending = this.vector.send(signal)
-                            .then(() => {
+                            .then((signal) => {
                                 this._pending = false;
+                                if (isUnset(this.response)) {
+                                    this.response = signal.response;
+                                }
                                 this.pool.signalStream.next(signal);
                                 return signal;
                             })
@@ -59,7 +73,8 @@ export default (bottle) => {
                                 this._pending = false;
                                 this.pool.signalStream.error(signal);
                                 return signal;
-                            })
+                            });
+                        this.sent = true;
                     }
 
                     return this._pending;
@@ -67,11 +82,7 @@ export default (bottle) => {
 
                 get signalStream() {
                     if (!this._signalStream) {
-                        this._signalStream = this.vector.signalStream
-                            .pipe(
-                                filter(this.vector.impulseFilter(this),
-                                    map(this.vector.impulseMap(this))
-                                ));
+                        this._signalStream = this.vector.makeImpulseStream(this);
                     }
                     return this._signalStream;
                 }
@@ -106,12 +117,41 @@ export default (bottle) => {
 
                     delete this.__subs;
                 }
+
+                /**
+                 * Get the identity property of the impulse's parameters.
+                 */
+                paramsToID() {
+                    if (/(get|post|delete)/.test(this.vector.name)) {
+                        const firstQuery = this.pool.impulseParamsToQuery(this);
+                        if (!(isUnset(firstQuery.id || firstQuery.id === ''))) {
+                            this.identity = firstQuery.id;
+                        }
+                    }
+                }
+
+                signalToID(signal) {
+                    if (signal.impulse.id !== this.id) {
+                        return;
+                    }
+                    if (signal.response && (typeof signal.response === 'object')) {
+                        this.identity = signal.response[this.pool.identityField];
+                    }
+                }
             }
+
 
             propper(Impulse)
                 .addProp('params', {
                     type: 'array',
                     required: true
+                })
+                .addProp('response', {
+                    defaultValue: () => UNSET
+                })
+                .addProp('sent', {
+                    type: 'boolean',
+                    defaultValue: false
                 })
                 .addProp('vector', {
                     required: true,
@@ -122,11 +162,11 @@ export default (bottle) => {
                                 field: 'vector',
                                 object: 'Impulse',
                                 err
-                            })
+                            });
                         }
                 });
 
             return Impulse;
         }
     );
-}
+};

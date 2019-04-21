@@ -10,7 +10,8 @@
     "build": "microbundle",
     "dev": "microbundle watch",
     "test": "NODE_ENV=test microbundle;tap test src/*.test.js",
-    "test:int": "microbundle;tap test integration/*.int.js"
+    "test:int": "microbundle;tap test integration/*.int-test.js",
+    "test:intr": "tap test integration/*.int-test.js"
   },
   "dependencies": {
     "@wonderlandlabs/looking-glass-engine": "^1.0.12",
@@ -29,6 +30,7 @@
     "yup": "^0.26.10"
   },
   "devDependencies": {
+    "eslint": "^5.16.0",
     "microbundle": "^0.11.0",
     "tap": "^12.6.1"
   },

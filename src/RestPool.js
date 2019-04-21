@@ -8,8 +8,8 @@ import propper from "@wonderlandlabs/propper";
 export default (bottle) => {
 
     bottle.factory('RestPool', ({
-                                    Pool, error, isUnset, noop, axios,
-                                    REST_ACTIONS, UNSET, restVectors, impulseParamsToQuery
+                                    Pool, error, isUnset, noop, axios, UNSET,
+                                    REST_ACTIONS, restVectors, impulseParamsToQuery
                                 }) => {
 
         class RestPool extends Pool {
@@ -42,12 +42,23 @@ export default (bottle) => {
                 }
             }
 
-            url(id, query) {
-                let str = urlJoin(this.baseURL, id);
-                if (query) {
-                    str += '?' + querystring.stringify(query);
+            toJSON(){
+                return {
+                    name: this.name,
+                    TYPE: 'RestPool',
+                    baseURL: this.baseURL,
+                    vectors: Array.from(this.vectors.keys())
+                };
+            }
+
+            url(id, queryParams) {
+                let url = (id === '' || isUnset(id)) ? this.baseURL : urlJoin(this.baseURL, id);
+                const q =  querystring.stringify(queryParams);
+                if (q) {
+                    url += '?' + q;
                 }
-                return str;
+                // console.log('url from ', this.baseURL, 'id =', id, 'queryParams = ', queryParams, '=', url);
+                return url;
             }
         };
 
@@ -58,28 +69,27 @@ export default (bottle) => {
                 defaultValue: 'id'
             })
             .addProp('connection', {
-                type: 'object',
                 required: true,
                 defaultValue: () => axios
             })
             .addProp('responseToData', {
                 type: 'function',
                 defaultValue() {
-                    return noop
+                    return noop;
                 },
                 required: true
             })
             .addProp('prepQuery', {
                 type: 'function',
                 defaultValue() {
-                    return noop
+                    return noop;
                 },
                 required: false
             })
             .addProp('dataToClass', {
                 type: 'function',
                 defaultValue() {
-                    return noop
+                    return noop;
                 },
             })
             .addProp('baseURL', {
@@ -99,5 +109,5 @@ export default (bottle) => {
             });
 
         return RestPool;
-    })
-}
+    });
+};

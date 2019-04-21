@@ -19,13 +19,14 @@ export default (bottle) => {
             toJSON() {
                 const out = {
                     id: this.id,
+                    TYPE: 'SIGNAL',
                     pool: this.pool.name,
                     vector: this.vector.name,
                     query: JSON.stringify(this.query),
                     error: lGet(this, 'error', null),
                     response: lGet(this, 'response', null),
                     impulseId: this.impulse.id
-                }
+                };
 
                 if (!isUnset(this._baseSignal)){
                     out.baseSignal = this._baseSignal.toJSON();
@@ -35,10 +36,7 @@ export default (bottle) => {
             }
 
             mutate(config) {
-                return new Signal(this.impulse, {
-                    ...config,
-                    baseSignal: this
-                });
+                return new Signal(this.impulse, Object.assign({}, config, {  baseSignal: this}));
             }
 
             get baseSignal() {
@@ -69,4 +67,4 @@ export default (bottle) => {
             }
         };
     });
-}
+};

@@ -56,7 +56,15 @@ export default (bottle) => {
             subscribe(...params) {
                 return this.signalStream.subscribe(...params);
             }
-        };
+
+            toJSON(){
+                return {
+                    name: this.name,
+                    TYPE: 'POOL',
+                    vectors: Array.from(this.vectors.keys())
+                }
+            }
+        }
 
         propper(Pool)
             .addProp('vectors', ({defaultValue: () => new Map}))
