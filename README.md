@@ -121,3 +121,6 @@ const sub = impulse.subscribe((s) => {
 
 ````
 
+The last bit is the interesting catch. For instance, if you post a new record
+with one impulse and subscribe to it, you will get updates every time someone 
+gets a record with that ID (or gets all)

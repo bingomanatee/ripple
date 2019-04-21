@@ -60,5 +60,37 @@ tap.test('RestPool:integration', (suite) => {
         obsTest.end();
     });
 
+    suite.test('observing distinct', async (obsTest) => {
+        const {userPool} = await beforeEach();
+
+        const postImpulse = await userPool.impulse('post', {
+            email: 'fred@foo.com',
+            name: 'Fred',
+            password: '12345235'
+        });
+
+        let subSignals = [];
+
+        postImpulse.subscribe((s) => subSignals.push(s),
+            err => {
+                console.log('>>>>>>> observing error: ', err)
+            });
+        const signal = await postImpulse.send();
+        const record = signal.response;
+
+        // getting the same data is not distinct, should be ignored.
+        await userPool.impulse('get', record._id).send();
+
+        // putting a new value into the same id should trigger tihe impulse stream
+        await userPool.impulse('put', record._id, {email: 'fred@foo.com', name: 'Fred Smith'})
+            .send();
+
+        obsTest.equal(subSignals.length, 2);
+        obsTest.equal(subSignals[1].response.email, 'fred@foo.com');
+        obsTest.equal(subSignals[1].response.name, 'Fred Smith');
+
+        obsTest.end();
+    });
+
     suite.end();
 });

@@ -1,6 +1,7 @@
 import lGet from 'lodash.get';
 import axios from 'axios';
-import {filter, map} from 'rxjs/operators';
+import lEqual from 'lodash.isequal';
+import {filter, map, distinctUntilChanged} from 'rxjs/operators';
 
 export default (bottle) => {
     bottle.constant('REST_ACTIONS', 'get,put,post,delete,getAll'.split(','));
@@ -99,6 +100,7 @@ export default (bottle) => {
                 }
 
                 let targetId = impulseRecordId(impulse);
+                let ID = impulse.pool.identityField;
 
                 let show = false;
                 let signalQuery;
@@ -123,7 +125,7 @@ export default (bottle) => {
                         break;
 
                     case 'getAll':
-                        show = true;
+                        show = signal.response.filter(r => r[ID] === targetId).length;
                         break;
 
                     default:
@@ -135,7 +137,23 @@ export default (bottle) => {
         };
     });
 
-    bottle.factory('restVectors', ({mapForId, filterForId}) => {
+    bottle.factory('compareResponse', ({}) => {
+        /**
+         * this is a factory that returns a function suitable for use in distinctUntilChanged.
+         * note the comparator returns true if the elements are equal
+         * and false if they are not -- and false is when the record will be emitted.
+         */
+        return impulse => {
+            let ID = impulse.pool.identityField;
+            return (s1, s2) => {
+                const response1 = s1.response;
+                const response2 = s2.response;
+                return lEqual(response1, response2);
+            };
+        };
+    });
+
+    bottle.factory('restVectors', ({mapForId, filterForId, compareResponse}) => {
 
         return {
             get: {
@@ -155,7 +173,8 @@ export default (bottle) => {
                     return impulse.pool.signalStream
                         .pipe(
                             filter(filterForId(impulse)),
-                            map(mapForId(impulse))
+                            map(mapForId(impulse)),
+                            distinctUntilChanged(compareResponse(impulse))
                         );
                 },
                 idempotent: true,
@@ -178,10 +197,11 @@ export default (bottle) => {
                     return impulse.pool.signalStream
                         .pipe(
                             filter((signal) => {
-                                return signal.vector.name === 'getAll';
+                                return signal.vector.name === 'getAll' && lEqual(signal.impulse.params, impulse.params);
                                 // @TODO - integrate sub-updates
                             })
                         );
+                    // note - NO distinctUntilChanged - too expensive to compare large arrays, always returning.
                 },
                 idempotent: true,
             },
@@ -203,7 +223,8 @@ export default (bottle) => {
                     return impulse.pool.signalStream
                         .pipe(
                             filter(filterForId(impulse)),
-                            map(mapForId(impulse))
+                            map(mapForId(impulse)),
+                            distinctUntilChanged(compareResponse(impulse))
                         );
                 },
 
@@ -227,7 +248,8 @@ export default (bottle) => {
                     return impulse.pool.signalStream
                         .pipe(
                             filter(filterForId(impulse)),
-                            map(mapForId(impulse))
+                            map(mapForId(impulse)),
+                            distinctUntilChanged(compareResponse(impulse))
                         );
                 },
 
@@ -246,6 +268,7 @@ export default (bottle) => {
                     return Object.assign({}, query,
                         {url: pool.url(query.id, query.query)});
                 },
+                // the default impulse stream -- only listens to itself -- is fine.
                 idempotent: false,
             }
         };
