@@ -191,7 +191,7 @@ export default (bottle) => {
         paramsToQuery(params, impulse) {
           const { pool } = impulse;
           //  console.log('----------------paramsToQuery: impulse', impulse.toJSON(), '-------------pool:', pool.toJSON(), '------------ ');
-          const query = pool.impulseParamsToQuery(params, impulse, true);
+          const query = pool.impulseParamsToQuery(params, impulse, false);
 
           return Object.assign({}, query, {
             'url': pool.url('', query.query)
