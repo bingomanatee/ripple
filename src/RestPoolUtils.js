@@ -108,17 +108,17 @@ export default (bottle) => {
 
         switch (signal.vector.name) {
           case 'put':
-            signalQuery = impulse.pool.impulseParamsToQuery(signal.impulse.params, signal.impulse, true);
+            signalQuery = impulse.pool.impulseParamsToQuery(signal.impulse.params, signal.impulse);
             show = !isUnset(targetId) && (signalQuery.id === targetId);
             break;
 
           case 'get':
-            signalQuery = impulse.pool.impulseParamsToQuery(signal.impulse.params, signal.impulse, true);
+            signalQuery = impulse.pool.impulseParamsToQuery(signal.impulse.params, signal.impulse);
             show = !isUnset(targetId) && (signalQuery.id === targetId);
             break;
 
           case 'delete':
-            signalQuery = impulse.pool.impulseParamsToQuery(signal.impulse.params, signal.impulse, true);
+            signalQuery = impulse.pool.impulseParamsToQuery(signal.impulse.params, signal.impulse);
             show = !isUnset(targetId) && (signalQuery.id === targetId);
             break;
 
@@ -159,8 +159,13 @@ export default (bottle) => {
       'get': {
         sender(query, impulse) {
           const { pool } = impulse;
+          const config = { ...query };
 
-          return pool.connection.get(query.url, { 'headers': query.headers })
+          delete config.url;
+          delete config.query;
+          delete config.id;
+
+          return pool.connection.get(query.url, config)
             .then((result) => pool.responseToData(result, impulse));
         },
         paramsToQuery(params, impulse) {
@@ -184,17 +189,24 @@ export default (bottle) => {
       'getAll': {
         sender(query, impulse) {
           const { pool } = impulse;
+          const config = { ...query };
 
-          return pool.connection.get(query.url, { 'headers': query.headers })
+          delete config.url;
+          delete config.query;
+          delete config.id;
+
+          return pool.connection.get(query.url, config)
             .then((result) => pool.responseToData(result, impulse));
         },
         paramsToQuery(params, impulse) {
           const { pool } = impulse;
-          //  console.log('----------------paramsToQuery: impulse', impulse.toJSON(), '-------------pool:', pool.toJSON(), '------------ ');
-          const query = pool.impulseParamsToQuery(params, impulse, false);
 
-          return Object.assign({}, query, {
-            'url': pool.url('', query.query)
+          //  console.log('----------------paramsToQuery: impulse', impulse.toJSON(), '-------------pool:', pool.toJSON(), '------------ ');
+          const config = pool.impulseParamsToQuery(params, impulse, false);
+          const { query } = config;
+
+          return Object.assign({}, config, {
+            'url': pool.url('', query)
           });
         },
         makeImpulseStream(impulse) {
@@ -213,8 +225,15 @@ export default (bottle) => {
       'put': {
         sender(query, impulse) {
           const { pool } = impulse;
+          const config = { ...query };
+          const body = lGet(query, 'body', {});
 
-          return pool.connection.put(query.url, query.data, { 'headers': query.headers })
+          delete config.url;
+          delete config.query;
+          delete config.id;
+          delete config.body;
+
+          return pool.connection.put(query.url, body, config)
             .then((result) => pool.responseToData(result, impulse));
         },
         paramsToQuery(params, impulse) {
@@ -241,7 +260,15 @@ export default (bottle) => {
         sender(query, impulse) {
           const { pool } = impulse;
 
-          return pool.connection.post(query.url, query.data, { 'headers': query.headers })
+          const config = { ...query };
+          const body = lGet(query, 'body', {});
+
+          delete config.url;
+          delete config.query;
+          delete config.id;
+          delete config.body;
+
+          return pool.connection.post(query.url, body, config)
             .then((result) => pool.responseToData(result, impulse));
         },
         paramsToQuery(params, impulse) {
@@ -267,8 +294,14 @@ export default (bottle) => {
       'delete': {
         sender(query, impulse) {
           const { pool } = impulse;
+          const config = { ...query };
 
-          return pool.connection.delete(query.url, { 'headers': query.headers })
+          delete config.url;
+          delete config.query;
+          delete config.id;
+          delete config.body;
+
+          return pool.connection.delete(query.url, config)
             .then((result) => pool.responseToData(result, impulse));
         },
         paramsToQuery(params, impulse) {
@@ -284,44 +317,40 @@ export default (bottle) => {
     };
   });
 
-  bottle.factory('impulseParamsToQuery', ({ UNSET, isUnset }) => {
-    return (params, impulse, isSingle) => {
+  /**
+   * this method expects an array
+   * [id, body, config]
+   * or [config]
+   * but NOT [id, config];
+   * use [id, null, config] instead.
+   */
+  bottle.factory('impulseParamsToQuery', () => {
+    return (params, impulse) => {
       const { pool } = impulse;
 
-      let id = UNSET;
-      let data = UNSET;
-      let headers = {};
-      let query = {};
+      const out = {};
 
-      params.forEach((param) => {
-        if (!isSingle && Array.isArray(param) && isUnset(data)) {
-          data = param;
-        } else if (typeof param === 'object') {
-          if (isSingle && isUnset(data)) {
-            data = param;
-            if (pool.identityField in param) {
-              id = lGet(param, pool.identityField);
-            }
-          } else {
-            if ('headers' in param) {
-              headers = param.headers;
-            }
-            if ('query' in param) {
-              query = param.query;
-            }
+      if (params.length > 0) {
+        const [ id, body, config ] = params;
+
+        if (id && (typeof id === 'object')) {
+          Object.assign(out, id);
+        } else {
+          if (config && (typeof config === 'object')) {
+            Object.assign(out, config);
           }
-        } else if (isSingle && isUnset(id)) {
-          id = param;
+
+          if (!(body === null || !body)) {
+            out.body = body;
+          }
+
+          if (!(id === null || id === '')) {
+            out.id = id;
+          }
         }
-      });
+      }
 
-      const out = {
-        'id': (isUnset(id) ? '' : id), 'data': (isUnset(data) ? {} : data), headers, query
-      };
-
-      // console.log('impulseParamsToQuery, params:', params, 'single:', isSingle, 'impulse:', impulse.toJSON());
-      // console.log('----------------impulseParamsToQuery-result:', out);
-
+      console.log('>>>>> transformed ', params, 'to', out, '<<<<<');
       return out;
     };
   });

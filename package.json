@@ -1,6 +1,6 @@
 {
   "name": "@wonderlandlabs/ripple",
-  "version": "1.15.4",
+  "version": "1.16.0",
   "description": "A stream based system for model/server communication",
   "source": "src/index.js",
   "main": "dist/index.js",
