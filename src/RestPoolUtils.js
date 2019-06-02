@@ -326,8 +326,6 @@ export default (bottle) => {
    */
   bottle.factory('impulseParamsToQuery', () => {
     return (params, impulse) => {
-      const { pool } = impulse;
-
       const out = {};
 
       if (params.length > 0) {
@@ -349,8 +347,7 @@ export default (bottle) => {
           }
         }
       }
-
-      console.log('>>>>> transformed ', params, 'to', out, '<<<<<');
+      console.log('imageParamsToQuery');
       return out;
     };
   });

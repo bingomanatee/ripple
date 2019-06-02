@@ -7,3 +7,7 @@ fixed a bug in getAll not processing headers properly
 ## 1.16.0
 
 radically simplifying query parameters; either [id, body?, config?] or [config?]
+
+## 1.16.1
+
+fixing a console reference generated error
