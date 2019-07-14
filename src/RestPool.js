@@ -56,7 +56,7 @@ export default (bottle) => {
         };
       }
 
-      url(id, queryParams) {
+      url(id = '', queryParams) {
         let url = (id === '' || isUnset(id)) ? this.baseURL : urlJoin(this.baseURL, id);
         const q = querystring.stringify(queryParams);
 

@@ -171,9 +171,12 @@ export default (bottle) => {
         paramsToQuery(params, impulse) {
           const { pool } = impulse;
           const query = pool.impulseParamsToQuery(params, impulse, true);
+          const url = pool.url(query.id, query.query);
+
+          console.log('get --- params URL:', url);
 
           return Object.assign({}, query, {
-            'url': pool.url(query.id, query.query)
+            'url': url
           });
         },
         makeImpulseStream(impulse) {
